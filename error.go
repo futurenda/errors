@@ -19,20 +19,28 @@ func (err Error) Error() string {
 	if err.cause == nil {
 		return err.Message
 	}
-	causes := []string{}
+	causes := []string{
+		err.Message,
+	}
 	func(c error) {
 		for {
 			if c == nil {
 				break
 			}
-			causes = append(causes, c.Error())
+			if err, ok := c.(Error); ok {
+				causes = append(causes, err.Message)
+			} else if err, ok := c.(*Error); ok {
+				causes = append(causes, err.Message)
+			} else {
+				causes = append(causes, c.Error())
+			}
 			if err, ok := c.(causer); ok {
 				c = err.Cause()
 			} else {
 				c = nil
 			}
 		}
-	}(err)
+	}(err.Cause())
 	return strings.Join(causes, "\n\t")
 }
 

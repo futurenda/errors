@@ -9,6 +9,11 @@ func ParseCode(err error) (Code, bool) {
 	if err == nil {
 		return nil, false
 	}
+	if err, ok := err.(Error); ok {
+		if err.Code != nil {
+			return err.Code, true
+		}
+	}
 	if err, ok := err.(*Error); ok {
 		if err.Code != nil {
 			return err.Code, true
