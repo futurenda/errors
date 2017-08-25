@@ -2,6 +2,7 @@ package errors
 
 import (
 	"fmt"
+	"strings"
 )
 
 type causer interface {
@@ -15,7 +16,24 @@ type Error struct {
 }
 
 func (err Error) Error() string {
-	return err.Message
+	if err.cause == nil {
+		return err.Message
+	}
+	causes := []string{}
+	func(c error) {
+		for {
+			if c == nil {
+				break
+			}
+			causes = append(causes, c.Error())
+			if err, ok := c.(causer); ok {
+				c = err.Cause()
+			} else {
+				c = nil
+			}
+		}
+	}(err)
+	return strings.Join(causes, "\n\t")
 }
 
 func (err Error) Cause() error {
