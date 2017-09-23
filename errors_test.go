@@ -5,6 +5,7 @@ import (
 
 	goErrors "errors"
 	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -57,5 +58,38 @@ var _ = Describe("Errors", func() {
 		code, ok = errors.ParseCode(err4)
 		Expect(ok).To(BeFalse())
 		Expect(code).To(BeNil())
+	})
+	It("Should be able to assertNil and recover", func() {
+		e1 := errors.New(nil, "E1")
+		e2 := errors.New(nil, "E2")
+		copy := func(i int, err error) (int, error) {
+			return i, err
+		}
+		i, err := func() (i int, err error) {
+			defer errors.Recover(&err)
+			i, err = copy(1, nil)
+			errors.AssertNil(err)
+			i, err = copy(2, nil)
+			errors.AssertNil(err, "msg")
+			i, err = copy(3, e1)
+			errors.AssertNil(err)
+			return 4, e2
+		}()
+		Expect(err).To(Equal(e1))
+		Expect(i).To(Equal(3))
+	})
+	It("Should be able to assertNil with wrap msg", func() {
+		e1 := errors.New(nil, "E1")
+		e2 := errors.New(nil, "E2")
+		exec := false
+		err := func() (err error) {
+			defer errors.Recover(&err)
+			errors.AssertNil(e1, "msg3")
+			exec = true
+			return e2
+		}()
+		Expect(err.(errors.Error).Cause()).To(Equal(e1))
+		Expect(err.(errors.Error).Message).To(Equal("msg3"))
+		Expect(exec).To(Equal(false))
 	})
 })
