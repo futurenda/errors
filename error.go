@@ -15,7 +15,7 @@ type Error struct {
 	cause   error
 }
 
-func (err Error) Error() string {
+func (err *Error) Error() string {
 	if err.cause == nil {
 		return err.Message
 	}
@@ -27,7 +27,7 @@ func (err Error) Error() string {
 			if c == nil {
 				break
 			}
-			if err, ok := c.(Error); ok {
+			if err, ok := c.(*Error); ok {
 				causes = append(causes, err.Message)
 			} else if err, ok := c.(*Error); ok {
 				causes = append(causes, err.Message)
@@ -44,28 +44,31 @@ func (err Error) Error() string {
 	return strings.Join(causes, "\n\t")
 }
 
-func (err Error) Cause() error {
+func (err *Error) Cause() error {
 	return err.cause
 }
 
-func New(code Code, message string) Error {
-	return Error{
+func New(code Code, message string) *Error {
+	return &Error{
 		Code:    code,
 		Message: message,
 	}
 }
 
-func Errorf(code Code, format string, args ...interface{}) Error {
+func Errorf(code Code, format string, args ...interface{}) *Error {
 	return New(code, fmt.Sprintf(format, args...))
 }
 
-func Wrap(err error, message string) Error {
-	return Error{
+func Wrap(err error, message string) *Error {
+	if err == nil {
+		return nil
+	}
+	return &Error{
 		Message: message,
 		cause:   err,
 	}
 }
 
-func Wrapf(err error, format string, args ...interface{}) Error {
+func Wrapf(err error, format string, args ...interface{}) *Error {
 	return Wrap(err, fmt.Sprintf(format, args...))
 }
